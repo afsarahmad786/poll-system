@@ -25,7 +25,7 @@ To install Apache Kafka, follow this [guide](https://www.geeksforgeeks.org/how-t
 
 ### Step 2: Start Zookeeper
 
-Zookeeper comes bundled with Kafka, so no separate installation is required. Start Zookeeper using the following command:
+Start Zookeeper using:
 
 ```bash
 zookeeper-server-start.bat config/zookeeper.properties
@@ -33,7 +33,7 @@ zookeeper-server-start.bat config/zookeeper.properties
 
 ### Step 3: Start Kafka Broker
 
-Once Zookeeper is running, start Kafka by running:
+Once Zookeeper is running, start Kafka:
 
 ```bash
 kafka-server-start.bat config/server.properties
@@ -41,7 +41,7 @@ kafka-server-start.bat config/server.properties
 
 ### Step 4: Verify Kafka and Zookeeper
 
-Make sure both Kafka and Zookeeper are running properly by checking their logs for any errors.
+Make sure both Kafka and Zookeeper are running properly by checking their logs.
 
 ---
 
@@ -89,7 +89,7 @@ Download **pgAdmin** from [here](https://www.pgadmin.org/download/) to manage yo
 
 ### Step 3: Create a Database
 
-After installing PostgreSQL, create a new database using **pgAdmin** or via the command line:
+Create a new database using **pgAdmin** or the PostgreSQL CLI:
 
 ```sql
 CREATE DATABASE polling;
@@ -198,7 +198,58 @@ Here are some useful PM2 commands:
 
 ---
 
-## 8. Starting Kafka Producer and Consumer
+## 8. API Endpoints
+
+### 1. Create a Poll
+
+**POST** `/polls/create`
+
+Example request body:
+
+```json
+{
+    "title": "Favorite Country?",
+    "options": [
+        "India",
+        "UK",
+        "US",
+        "UAE"
+    ]
+}
+```
+
+This endpoint allows you to create a poll with a title and a list of options.
+
+### 2. Cast a Vote
+
+**POST** `/polls/:id/vote`
+
+Example request body:
+
+```json
+{
+    "email": "user@example.com",
+    "option_id": 48
+}
+```
+
+This endpoint allows users to vote on a specific poll by providing their email and the option they are voting for.
+
+### 3. Get Poll Results
+
+**GET** `/polls/:id/results`
+
+This endpoint returns the results of a specific poll, displaying the number of votes for each option.
+
+### 4. Get Leaderboard
+
+**GET** `/polls/leaderboard`
+
+This endpoint retrieves a leaderboard of polls based on the total number of votes.
+
+---
+
+## 9. Starting Kafka Producer and Consumer
 
 Make sure both Kafka producer and consumer services are running to send and process poll updates.
 
@@ -207,7 +258,7 @@ Make sure both Kafka producer and consumer services are running to send and proc
 
 ---
 
-## 9. Accessing the Application
+## 10. Accessing the Application
 
 Once everything is set up:
 
@@ -219,7 +270,7 @@ You can then access the application at `http://localhost:3000`.
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 - **Kafka Issues**: Ensure that Zookeeper is running before starting Kafka.
 - **Database Connection Errors**: Double-check your PostgreSQL credentials and `.env` file configuration.
@@ -230,4 +281,3 @@ You can then access the application at `http://localhost:3000`.
 Feel free to reach out if you encounter any issues during the setup process. Happy coding!
 
 ---
-
