@@ -29,7 +29,6 @@ const createPollWithOptions = async (title, options) => {
 // New function for voting on a poll
 
 const voteOnPoll = async (id, option_id, email) => {
-  // Correct the parameters here
   console.log("service layer start");
 
   try {
@@ -38,30 +37,27 @@ const voteOnPoll = async (id, option_id, email) => {
       include: [{ model: Option, as: "options" }],
     });
     if (!poll) {
-      throw new Error("Poll not found"); // Throw the error instead of returning response object
-    }
-    console.log("service layer mid");
-
-    // Check if the option_id is valid and belongs to the poll
-    const validOption = poll.options.some(
-      (option) => option.option_id === option_id
-    );
-    if (!validOption) {
-      throw new Error("Invalid option selected for this poll"); // Throw the error for invalid option
+      throw new Error("Poll not found");
     }
 
-    // Check if user has already voted
+    // Validate if the selected option belongs to the poll
+    const option = poll.options.find((opt) => opt.option_id === option_id);
+    if (!option) {
+      throw new Error("Invalid option selected for this poll");
+    }
+
+    // Check if the user has already voted
     const existingVote = await Vote.findOne({ where: { poll_id: id, email } });
     if (existingVote) {
-      throw new Error("You have already voted on this poll"); // Throw error if already voted
+      throw new Error("You have already voted on this poll");
     }
 
-    // Record the user's vote
-    const vote = await Vote.create({
-      email,
-      poll_id: id,
-      option_id,
-    });
+    // Record the vote and increment the vote_count
+    const vote = await Vote.create({ email, poll_id: id, option_id });
+
+    // Increment vote_count and save the updated option
+    option.vote_count += 1;
+    await option.save();
 
     // Send the vote to Kafka
     const voteData = {
@@ -71,7 +67,6 @@ const voteOnPoll = async (id, option_id, email) => {
       vote_time: new Date(),
     };
     send("votes", { action: "VOTE_CAST", vote: voteData });
-    console.log("service layer end");
 
     // Update leaderboard and broadcast new ranking
     const leaderboard = await getLeaderboard();
@@ -98,6 +93,7 @@ const getPollResults = async (pollId) => {
             Sequelize.fn("COUNT", Sequelize.col("options->votes.vote_id")),
             "vote_count",
           ],
+          
         ],
         include: [
           {
@@ -109,6 +105,7 @@ const getPollResults = async (pollId) => {
       },
     ],
     group: ["Poll.poll_id", "options.option_id"],
+    order: [[Sequelize.fn("COUNT", Sequelize.col("options->votes.vote_id")), "DESC"]], // Order by vote_count descending
   });
 
   if (!poll) {
@@ -122,15 +119,12 @@ const getPollResults = async (pollId) => {
 
 const getLeaderboard = async () => {
   try {
-    const [leaderboardData, metadata] = await sequelize.query(`
-      SELECT "Option"."option_id", "Option"."option_text","Option"."poll_id", COUNT("votes"."vote_id") AS "vote_count"
-      FROM "options" AS "Option"
-      LEFT OUTER JOIN "votes" AS "votes"
-      ON "Option"."option_id" = "votes"."option_id"
-      GROUP BY "Option"."option_id"
-      ORDER BY "vote_count" DESC
-      LIMIT 10;
-    `);
+    // Use Sequelize's findAll method to get the top 10 options by vote_count
+    const leaderboardData = await Option.findAll({
+      attributes: ['option_id', 'option_text', 'poll_id', 'vote_count'], // Specify the attributes to retrieve
+      order: [['vote_count', 'DESC']], // Order by vote_count in descending order
+      limit: 10, // Limit the results to 10
+    });
 
     return leaderboardData;
   } catch (error) {
@@ -138,7 +132,6 @@ const getLeaderboard = async () => {
     throw new Error('Internal Server Error');
   }
 };
-
 
 module.exports = {
   createPollWithOptions,

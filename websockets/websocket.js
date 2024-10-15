@@ -24,8 +24,15 @@ const broadcastLeaderboardUpdate = (leaderboard) => {
   io.emit('leaderboard_update', leaderboard);
 };
 
+const broadcastVoteUpdate = (optionId, newVoteCount) => {
+  if (io) {
+    io.emit('vote_update', { optionId, newVoteCount }); // Push real-time vote count updates
+  }
+};
+
 module.exports = {
   setupWebSocket,
   broadcastNewPoll,
-  broadcastLeaderboardUpdate
+  broadcastLeaderboardUpdate,
+  broadcastVoteUpdate
 };

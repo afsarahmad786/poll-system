@@ -1,7 +1,11 @@
 const kafka = require('kafka-node');
 const Producer = kafka.Producer;
-const client = new kafka.KafkaClient({ kafkaHost: 'localhost:9092' });  // Ensure the Kafka host is correctly specified
-const producer = new Producer(client);
+const client = new kafka.KafkaClient({ kafkaHost: 'localhost:9092' });
+const producer = new Producer(client, {
+  requireAcks: 1, // Ensures that the leader has acknowledged the message
+  ackTimeoutMs: 100,  // Acknowledgment timeout
+  retries: 5,  // Number of retry attempts in case of failure
+});
 
 producer.on('ready', () => {
   console.log('Kafka Producer is ready');

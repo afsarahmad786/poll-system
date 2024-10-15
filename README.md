@@ -1,128 +1,233 @@
----
+# Poll Application Setup Guide
 
-# Project Setup Guide
-
-Welcome to the project! This guide will help you set up the necessary tools and dependencies to get the project running on your local machine. Follow the instructions carefully to ensure everything is properly configured.
+Welcome to the **Poll Application** project! This guide will help you set up the project on your local machine, covering dependencies, database configuration, Apache Kafka setup, and process management using PM2.
 
 ## Prerequisites
 
-Ensure you have the following tools installed on your system:
+Ensure that you have the following tools installed:
 
-- **Node.js**
-- **PostgreSQL** and **pgAdmin**
-- **Apache Kafka**
+- **Node.js** (v20.15.1 or later)
+- **PostgreSQL** with **pgAdmin**
+- **Apache Kafka** with **Zookeeper**
+- **PM2** (for process management)
 
-## 1. Apache Kafka Setup
+---
+
+## 1. Apache Kafka with Zookeeper Setup
 
 ### Step 1: Download and Install Kafka
 
-Follow this [guide](https://www.geeksforgeeks.org/how-to-install-and-run-apache-kafka-on-windows/) to download and install Apache Kafka on your system.
+To install Apache Kafka, follow this [guide](https://www.geeksforgeeks.org/how-to-install-and-run-apache-kafka-on-windows/). Kafka requires Zookeeper to manage broker configurations and ensure fault tolerance.
 
-1. Download Kafka from the provided link.
-2. Set up Kafka by following the step-by-step instructions.
-3. Make sure Zookeeper is up and running, then start Kafka.
+1. Download Kafka from the link above.
+2. Extract Kafka to a directory on your machine.
+3. Follow the guide's instructions to set up Kafka.
 
-### Step 2: Verify Kafka Installation
+### Step 2: Start Zookeeper
 
-After setting up Kafka, run the following command to ensure Kafka is running:
+Zookeeper comes bundled with Kafka, so no separate installation is required. Start Zookeeper using the following command:
+
+```bash
+zookeeper-server-start.bat config/zookeeper.properties
+```
+
+### Step 3: Start Kafka Broker
+
+Once Zookeeper is running, start Kafka by running:
 
 ```bash
 kafka-server-start.bat config/server.properties
 ```
 
+### Step 4: Verify Kafka and Zookeeper
+
+Make sure both Kafka and Zookeeper are running properly by checking their logs for any errors.
+
 ---
 
 ## 2. Node.js Setup
 
-### Step 1: Download and Install Node.js
+### Step 1: Install Node.js (v20.15.1)
 
-Download Node.js from the official website [here](https://nodejs.org/en) and install it on your system.
-
-To verify the installation, run:
+Download Node.js from [here](https://nodejs.org/en) and ensure you are using version **20.15.1** or later. To verify the installation, run:
 
 ```bash
 node -v
 npm -v
 ```
 
-You should see the version of Node.js and npm installed.
+### Step 2: Install Dependencies
+
+Navigate to the project directory and run:
+
+```bash
+npm install
+```
+
+This will install all necessary packages, including:
+
+- **express**
+- **pg** (PostgreSQL client)
+- **kafka-node** (Kafka client)
+- **sequelize** (ORM for SQL databases)
+- **pg-hstore**
+- **dotenv** (environment variables)
+- **body-parser**
+- **pm2** (process management)
 
 ---
 
 ## 3. PostgreSQL and pgAdmin Setup
 
-### Step 1: Download and Install PostgreSQL
+### Step 1: Install PostgreSQL
 
-Download PostgreSQL from [this link](https://www.postgresql.org/ftp/pgadmin/pgadmin4/v8.12/windows/) and follow the installation process. During setup, make sure to **create a custom password** for the `postgres` user.
+Download PostgreSQL from [here](https://www.postgresql.org/download/) and install it on your machine. Create a strong password for the `postgres` user.
 
-### Step 2: Download and Install pgAdmin
+### Step 2: Install pgAdmin
 
-Download pgAdmin from [here](https://www.pgadmin.org/download/) to manage your PostgreSQL database with a graphical interface.
+Download **pgAdmin** from [here](https://www.pgadmin.org/download/) to manage your PostgreSQL databases.
 
----
+### Step 3: Create a Database
 
-## 4. Project Dependencies
+After installing PostgreSQL, create a new database using **pgAdmin** or via the command line:
 
-After installing Node.js, you can install the required project dependencies by running the following commands in your project directory:
-
-### Step 1: Install Required Packages
-
-```bash
-npm install express pg kafka-node websocket body-parser dotenv
-npm install sequelize pg pg-hstore
-npm install --save-dev sequelize-cli
+```sql
+CREATE DATABASE polling;
 ```
 
-These packages are required for:
-
-- **Express**: Web server framework.
-- **pg**: PostgreSQL client for Node.js.
-- **kafka-node**: Kafka client for Node.js.
-- **websocket**: WebSocket support.
-- **body-parser**: Parse incoming request bodies.
-- **dotenv**: Load environment variables from `.env`.
-- **sequelize**: ORM for SQL databases.
-- **pg-hstore**: PostgreSQL-specific datatype for Sequelize.
-- **sequelize-cli**: Command line tool for Sequelize.
-
 ---
 
-## 5. Environment Variables
+## 4. Configure Environment Variables
 
 Create a `.env` file in the root of your project and add the following environment variables:
 
 ```bash
-DB_USER=<your_postgres_user>
-DB_PASSWORD=<your_postgres_password>
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=<your_database_name>
+DATABASE_URL=postgresql://root:root@localhost/polling
 KAFKA_HOST=localhost:9092
+DB_USERNAME=postgres
+DB_PASSWORD=root
+DB_DATABASE=polling
+DB_HOST=127.0.0.1
+DB_DIALECT=postgres
 ```
-
-Make sure to replace placeholders with your actual values.
 
 ---
 
-## 6. Running the Application
+## 5. Database Configuration
 
-Once you have set up everything, you can run the application using:
+In your `config/config.json`, update the development configuration to match the `.env` variables:
+
+```json
+{
+  "development": {
+    "username": "postgres",
+    "password": "root",
+    "database": "polling",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "root",
+    "password": null,
+    "database": "database_test",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "root",
+    "password": null,
+    "database": "database_production",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+}
+```
+
+Make sure that the `development` section matches your `.env` file settings.
+
+---
+
+## 6. Running Migrations and Seeders
+
+### Step 1: Run Migrations
+
+To set up your database schema, run:
 
 ```bash
-npm start
+npx sequelize-cli db:migrate
 ```
 
-Make sure Kafka, PostgreSQL, and your environment variables are properly configured.
+### Step 2: Run Seeders
+
+To populate the database with initial data, run:
+
+```bash
+npx sequelize-cli db:seed:all
+```
 
 ---
 
-## 7. Additional Notes
+## 7. Running the Application with PM2
 
-- Make sure all the services (Kafka, PostgreSQL) are running before starting the Node.js application.
-- For any issues with PostgreSQL, use **pgAdmin** to manage databases.
+### Step 1: Install PM2
+
+Install **PM2** globally for process management:
+
+```bash
+npm install -g pm2
+```
+
+### Step 2: Start the Application
+
+Start the application using PM2:
+
+```bash
+pm2 start npm --name "poll-application" -- start
+```
+
+PM2 will keep the application running in the background, ensuring that it survives restarts.
+
+### Step 3: Manage PM2 Processes
+
+Here are some useful PM2 commands:
+
+- **List running processes**: `pm2 list`
+- **Stop a process**: `pm2 stop poll-application`
+- **Restart a process**: `pm2 restart poll-application`
+- **View logs**: `pm2 logs`
 
 ---
 
-Feel free to reach out if you encounter any issues during setup. Happy coding!
+## 8. Starting Kafka Producer and Consumer
+
+Make sure both Kafka producer and consumer services are running to send and process poll updates.
+
+- **Start Kafka Producer**: Ensure the producer is running to send messages.
+- **Start Kafka Consumer**: The consumer should be running to process incoming poll results.
 
 ---
+
+## 9. Accessing the Application
+
+Once everything is set up:
+
+1. Start Zookeeper and Kafka.
+2. Ensure PostgreSQL is running and the database is configured.
+3. Start the Node.js app using PM2.
+
+You can then access the application at `http://localhost:3000`.
+
+---
+
+## 10. Troubleshooting
+
+- **Kafka Issues**: Ensure that Zookeeper is running before starting Kafka.
+- **Database Connection Errors**: Double-check your PostgreSQL credentials and `.env` file configuration.
+- **PM2 Issues**: Restart PM2 if necessary using `pm2 kill` followed by `pm2 start`.
+
+---
+
+Feel free to reach out if you encounter any issues during the setup process. Happy coding!
+
+---
+

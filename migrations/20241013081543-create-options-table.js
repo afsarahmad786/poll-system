@@ -22,9 +22,14 @@ module.exports = {
         },
         onDelete: 'CASCADE',
         allowNull: false
+      },
+      vote_count: { // New Field
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
       }
     });
   },
+
   down: async (queryInterface, Sequelize) => {
     await queryInterface.dropTable('options');
   }

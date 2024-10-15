@@ -1,6 +1,7 @@
 const pollService = require("../services/pollService");
 const { send } = require("../kafka/producer");
-const { broadcastNewPoll } = require("../websockets/websocket");
+const { broadcastVoteUpdate ,broadcastNewPoll ,broadcastLeaderboardUpdate} = require("../websockets/websocket");
+const { Option } = require('../models'); // Import the Option model
 
 const voteOnPoll = async (req, res) => {
   const { id } = req.params;  // poll_id
@@ -13,8 +14,20 @@ const voteOnPoll = async (req, res) => {
     // Call the service layer to handle the voting process
     const vote = await pollService.voteOnPoll(id, option_id, email);
 
+    // Retrieve updated vote count from the option
+    const option = await Option.findByPk(option_id);
+    if (!option) {
+      throw new Error('Option not found');
+    }
+
+    // Broadcast the vote update
+    broadcastVoteUpdate(option_id, option.vote_count); // Broadcast update
+    const leaderboard = await pollService.getLeaderboard();  // Fetch the latest leaderboard data
+    broadcastLeaderboardUpdate(leaderboard);  // Push leaderboard update to all clients
+
     return res.status(201).json({ message: 'Vote recorded successfully', vote });
   } catch (error) {
+    console.error('Error casting vote:', error); // Log complete error
     if (error.message === 'Poll not found') {
       return res.status(404).json({ message: 'Poll not found' });
     } else if (error.message === 'You have already voted on this poll') {
@@ -22,7 +35,7 @@ const voteOnPoll = async (req, res) => {
     } else if (error.message === 'Invalid option selected for this poll') {
       return res.status(400).json({ message: 'Invalid option selected for this poll' });
     } else {
-      return res.status(500).json({ message: 'Internal Server Error', error });
+      return res.status(500).json({ message: 'Internal Server Error', error: error.message });
     }
   }
 };

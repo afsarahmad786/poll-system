@@ -16,6 +16,10 @@ module.exports = (sequelize, DataTypes) => {
         model: 'Polls',
         key: 'poll_id'
       }
+    },
+    vote_count: { // New Field
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
     }
   }, {
     timestamps: false,
@@ -24,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Option.associate = function(models) {
     Option.belongsTo(models.Poll, { foreignKey: 'poll_id', as: 'poll' });
-    Option.hasMany(models.Vote, { foreignKey: 'option_id', as: 'votes' }); // Association with Vote
+    Option.hasMany(models.Vote, { foreignKey: 'option_id', as: 'votes' });
   };
 
   return Option;
