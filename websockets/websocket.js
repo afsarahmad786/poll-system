@@ -19,7 +19,13 @@ const broadcastNewPoll = (poll) => {
   }
 };
 
+// Function to broadcast leaderboard update
+const broadcastLeaderboardUpdate = (leaderboard) => {
+  io.emit('leaderboard_update', leaderboard);
+};
+
 module.exports = {
   setupWebSocket,
   broadcastNewPoll,
+  broadcastLeaderboardUpdate
 };

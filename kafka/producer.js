@@ -1,6 +1,6 @@
 const kafka = require('kafka-node');
 const Producer = kafka.Producer;
-const client = new kafka.KafkaClient();
+const client = new kafka.KafkaClient({ kafkaHost: 'localhost:9092' });  // Ensure the Kafka host is correctly specified
 const producer = new Producer(client);
 
 producer.on('ready', () => {

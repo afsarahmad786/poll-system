@@ -24,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Option.associate = function(models) {
     Option.belongsTo(models.Poll, { foreignKey: 'poll_id', as: 'poll' });
+    Option.hasMany(models.Vote, { foreignKey: 'option_id', as: 'votes' }); // Association with Vote
   };
 
   return Option;
